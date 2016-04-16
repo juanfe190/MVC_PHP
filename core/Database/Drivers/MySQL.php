@@ -11,43 +11,41 @@ class MySQL{
 	* de config.php
 	*/
 	private function connect(){
-		include_once (__DIR__ . '/../../config.php');
+		require (__DIR__ . '/../../config.php');
 		$mysqlCFG =$database['mysql'];
-		self::$db = new \mysqli($mysqlCFG['host'],
-							   $mysqlCFG['user'],
-							   $mysqlCFG['password'],
-							   $mysqlCFG['dbname']);
-
-		if(self::$db->connect_errno > 0){
-		    die('Imposible conectar a la base de datos');
+		
+		if(!self::$db){
+			$connectionString = "mysql:host=$mysqlCFG[host];dbname=$mysqlCFG[dbname]";
+			try{
+				self::$db = new \PDO($connectionString, $mysqlCFG['user'], $mysqlCFG['password']);
+				self::$db->setAttribute( \PDO::ATTR_ERRMODE, \PDO::ERRMODE_EXCEPTION);
+			}catch(\PDOException $e){
+				die("Ocurrio un error al conectar con la base de datos: $e->getMessage()");
+			}
 		}
+		
 	}
 
 	/**
 	* Realiza un SELECT de la BD
 	*
 	* @param String column name
-	* @param String value row value
+	* @param String row value
 	* @param String table name
 	*
 	**/
 	public static function where($key, $value, $tbName){
 		self::connect();
-			if($statement = self::$db->prepare("SELECT * FROM ".$tbName." where ".$key." = ?")){
-				$statement->bind_param('s', $value);
-				$statement->execute();
-				
-				$result = $statement->get_result();
-				$allRows = [];
-				while($row  = $result->fetch_array(MYSQLI_ASSOC)){
-					array_push($allRows, $row);
-				}
-				
-				$statement->close();
-			}else die('Error al crear statement');
-			
-		self::$db->close();
-		return $allRows;
+		try{
+			$statement = self::$db->prepare("SELECT * from $tbName WHERE $key=$variables");
+			$statement->execute(['value'=>$value]);
+			$statement->setFetchMode(\PDO::FETCH_ASSOC);
+
+			$result = $statement->fetchAll();
+		}catch(\PDOException $e){
+			die("Error al crear statement: $e->getMessage()");
+		}
+		return $result;
 	}
 
 	/**
@@ -58,20 +56,35 @@ class MySQL{
 	**/
 	public static function all($tbName){
 		self::connect();
+		try{
+			$statement = self::$db->prepare("SELECT * from $tbName");
+			$statement->execute();
+			$statement->setFetchMode(\PDO::FETCH_ASSOC);
 
-			if($statement = self::$db->prepare("SELECT * FROM ".$tbName)){
-				$statement->execute();
-				
-				$result = $statement->get_result();
-				$allRows = [];
-				while($row  = $result->fetch_array(MYSQLI_ASSOC)){
-					array_push($allRows, $row);
-				}
-				
-				$statement->close();
-			}else die('Error al crear statement');
-			
-		self::$db->close();
-		return $allRows;
+			$result = $statement->fetchAll();
+		}catch(\PDOException $e){
+			die("Error al crear statement: $e->getMessage()");
+		}
+		return $result;
+	}
+
+	/**
+	* Inserta valores en la base de datos
+	*
+	* @param Assoc_array valores a insertar
+	* @param String table name
+	* @param Array columnas en las que se va a insertar
+	*/
+	public static function store($values, $tbName, $fillable){
+		self::connect();
+		$columns = implode(",", $fillable);
+		$variables =':' . implode(",:", $fillable);
+
+		try{
+			$statement = self::$db->prepare("INSERT INTO $tbName($columns) VALUES($variables)");
+			$statement->execute($values);
+		}catch(\PDOException $e){
+			die("Error al crear statement: $e->getMessage()");
+		}
 	}
 }

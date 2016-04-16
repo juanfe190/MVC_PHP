@@ -4,7 +4,7 @@ namespace App\Controllers;
 
 use Core\Routing\Controller;
 use Core\Routing\Request;
-use App\Models\Employees;
+use App\Models\Empleado;
 
 class MainController extends Controller{ 
 	public function index(){
@@ -12,8 +12,9 @@ class MainController extends Controller{
 	}
 
 	public function database(){
-		$employee = new Employees;
-		$employee = $employee->where('gender', 'M');
-		return $this->response()->json($employee);
+		$empleados = new Empleado;
+		$empleados->store(['nombre'=>'Felix', 'apellido'=>'vasquez']);
+		
+		return $this->response()->json($empleados->all());
 	}
 } 

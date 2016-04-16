@@ -28,4 +28,14 @@ class Model{
 	public function all(){
 		return MySQL::all($this->tableName);
 	}
+
+	/**
+	* Guarda los valores en la base de datos, utiliza $fillable para definir
+	* las columnas a llenar
+	*
+	* @param Assoc_array valores a insertar
+	*/
+	public function store($values){
+		return MySQL::store($values, $this->tableName, $this->fillable);
+	}
 }

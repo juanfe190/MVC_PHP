@@ -33,7 +33,7 @@ class Request {
 	public static function isJson(){
 		$headers = getallheaders();
 		foreach ($headers as $key => $value) {
-			if($key == 'Content-Type' && strpos($value, 'application/json')!==false) return true;
+			if($key == 'Content-Type' && strpos($value, 'json')!==false) return true;
 		}
 		return false;
 	}
